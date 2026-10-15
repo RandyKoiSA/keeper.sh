@@ -1,0 +1,56 @@
+name: Build and Smoke Test Docker Image
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: docker-build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  standalone:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+
+      - name: Build keeper-standalone
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          file: docker/standalone/Dockerfile
+          load: true
+          push: false
+          tags: keeper-standalone:ci
+          cache-from: type=gha,scope=ci-standalone
+          cache-to: type=gha,mode=max,scope=ci-standalone
+
+      - name: Run the container
+        run: |
+          docker run -d --name keeper -p 8080:80 \
+            -e BETTER_AUTH_SECRET="$(openssl rand -base64 32)" \
+            -e ENCRYPTION_KEY="$(openssl rand -base64 32)" \
+            keeper-standalone:ci
+
+      - name: Wait for the web app to respond
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl -fsS -H "Accept: text/html" http://localhost:8080/ > /dev/null; then
+              echo "keeper-standalone is up after ${attempt} attempts"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "keeper-standalone did not become healthy" >&2
+          exit 1
+
+      - name: Show container logs
+        if: always()
+        run: docker logs keeper 2>&1 | tail -200
