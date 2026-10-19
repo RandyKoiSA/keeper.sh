@@ -94,8 +94,8 @@ const createMicrosoftOAuthService = (
     url.searchParams.set("scope", scopes.join(" "));
     url.searchParams.set("response_mode", "query");
     // A hinted reconnect targets one account, so the picker would only invite the wrong choice.
+    // No prompt is sent either: forcing consent re-prompts for an already admin-consented tenant.
     if (options.loginHint) {
-      url.searchParams.set("prompt", "consent");
       url.searchParams.set("login_hint", options.loginHint);
     } else {
       url.searchParams.set("prompt", "select_account");

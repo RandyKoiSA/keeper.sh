@@ -258,7 +258,8 @@ const createAuth = (config: AuthConfig) => {
         }
         return {};
       },
-      prompt: "consent",
+      // Forcing consent re-prompts for permissions an Entra admin already granted for the tenant.
+      prompt: "select_account",
       scope: ["offline_access", "User.Read", "Calendars.ReadWrite"],
     };
   }
