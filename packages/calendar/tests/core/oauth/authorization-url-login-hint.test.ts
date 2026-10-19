@@ -89,6 +89,7 @@ describe("microsoft getAuthorizationUrl", () => {
     const { searchParams } = await buildMicrosoftUrl(LOGIN_HINT);
 
     expect(searchParams.get("login_hint")).toBe(LOGIN_HINT);
-    expect(searchParams.get("prompt")).toBe("consent");
+    // Consent is not forced, so an admin-consented tenant reconnects without a consent screen.
+    expect(searchParams.get("prompt")).toBeNull();
   });
 });
